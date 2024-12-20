@@ -16,13 +16,14 @@ defmodule ElixirClusterGame.NodeWatcher do
     current_nodes = Node.list()
     Enum.each(current_nodes -- known_nodes, fn n ->
       IO.puts("[JOIN] Node joined: #{n}")
+      IO.puts("Current cluster: #{inspect(current_nodes)}")
     end)
 
     Enum.each(known_nodes -- current_nodes, fn n ->
       IO.puts("[LEAVE] Node left: #{n}")
+      IO.puts("Current cluster: #{inspect(current_nodes)}")
     end)
 
-    IO.puts("Current cluster: #{inspect(current_nodes)}")
 
     schedule_check()
     {:noreply, current_nodes}
