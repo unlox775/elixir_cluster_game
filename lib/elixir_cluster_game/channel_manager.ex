@@ -72,17 +72,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   defp handle_incoming_message(from_node, game_msg) do
-    # Extract the short name of sender for convenience
-    from_short = short_from_full_node_name(from_node)
-
-    # Here’s where you handle your actual game logic. For example:
-    # pattern match on the game_msg and do something:
-    case game_msg do
-      {:banana, number} ->
-        IO.puts("Received {:banana, #{number}} from #{from_short}")
-      _ ->
-        IO.puts("Received #{inspect(game_msg)} from #{from_short}")
-    end
+    Game.Handler.handle(short_from_full_node_name(from_node), game_msg)
   end
 
   defp broadcast(msg) do
