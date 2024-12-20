@@ -23,7 +23,8 @@ defmodule ElixirClusterGame.Application do
        [Application.get_env(:libcluster, :topologies), [name: ElixirClusterGame.ClusterSupervisor]]},
 
       # Start the NodeWatcher GenServer
-      {ElixirClusterGame.NodeWatcher, []}
+      {ElixirClusterGame.NodeWatcher, []},
+      {ElixirClusterGame.ChannelManager, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
