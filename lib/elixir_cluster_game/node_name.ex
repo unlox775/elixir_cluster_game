@@ -1,9 +1,11 @@
 defmodule ElixirClusterGame.NodeName do
   def short_name do
-    # node() returns something like :"node1@hostname"
-    # Convert it to a string and split
-    node_str = Atom.to_string(node())
-    [short | _] = String.split(node_str, "@")
+    shorten(node())
+  end
+
+  def shorten(full_node) do
+    full_str = Atom.to_string(full_node)
+    [short | _] = String.split(full_str, "@")
     String.to_atom(short)
   end
 end

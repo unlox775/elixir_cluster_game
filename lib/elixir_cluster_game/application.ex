@@ -24,7 +24,8 @@ defmodule ElixirClusterGame.Application do
 
       # Start the NodeWatcher GenServer
       {ElixirClusterGame.NodeWatcher, []},
-      {ElixirClusterGame.ChannelManager, []}
+      {ElixirClusterGame.ChannelManager, []},
+      {ElixirClusterGame.RoshamboLaser.GameState, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
