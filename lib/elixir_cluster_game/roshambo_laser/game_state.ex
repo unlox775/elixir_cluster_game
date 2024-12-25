@@ -207,6 +207,7 @@ defmodule ElixirClusterGame.RoshamboLaser.GameState do
         acc ++ [history]
       {:split_beam, split_one, split_two} ->
         acc ++ [history |> Enum.drop(-1)] ++ get_all_history_nodes(split_one) ++ get_all_history_nodes(split_two)
+      nil -> []
     end
   end
 
