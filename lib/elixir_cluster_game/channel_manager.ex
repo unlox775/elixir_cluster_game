@@ -135,7 +135,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   def handle_info({:rolled_dice, roll}, state) do
-    IO.inspect(roll, label: "Rolled dice - ===============================> ")
+    # IO.inspect(roll, label: "Rolled dice - ===============================> ")
     {state, did_record_a_new_roll} = record_roll(roll, state)
 
     {:noreply, notify_winner_if_roll_complete(state, roll, did_record_a_new_roll)}

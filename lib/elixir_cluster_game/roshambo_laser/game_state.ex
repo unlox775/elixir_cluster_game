@@ -46,14 +46,14 @@ defmodule ElixirClusterGame.RoshamboLaser.GameState do
     {:reply, state.history, state}
   end
 
+  def handle_call(:get_starting_player, _from, state) do
+    {:reply, Map.get(state.rules, :starting_player), state}
+  end
+
   @impl true
   def handle_cast({:set_starting_player, player}, state) do
     new_rules = Map.put(state.rules, :starting_player, player)
     {:noreply, %{state | rules: new_rules}}
-  end
-
-  def handle_cast(:get_starting_player, state) do
-    {:reply, Map.get(state.rules, :starting_player), state}
   end
 
   def handle_cast({:first_shot, _target_person, _move}, %{shot_in_progress: true} = state) do
