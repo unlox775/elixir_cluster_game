@@ -129,7 +129,7 @@ defmodule ElixirClusterGame.ChannelManager do
 
   def handle_info({:please_roll_dice, roll_type, roll_identifier}, state) do
     # This node gets a random nunber (as all others are getting at the same moment)
-    roll = {roll_type, roll_identifier, Node.self(), Enum.random(1..10_000_000)}
+    roll = {roll_type, roll_identifier, NodeName.short_name(), Enum.random(1..10_000_000)}
     broadcast({:rolled_dice, roll})
     {:noreply, state}
   end
@@ -161,7 +161,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   def handle_info({:game_message, {:send_message, to_player, message_id, msg}}, state) do
-    my_short = ElixirClusterGame.NodeName.short_name()
+    my_short = NodeName.short_name()
     if my_short == to_player do
       # call this user' local handler:
       RoshamboGame.handle_incoming_message(message_id, msg)
