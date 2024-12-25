@@ -10,7 +10,15 @@ defmodule ElixirClusterGame.ChannelManager do
   @topic "cluster:lobby"
 
   def start_link(_args) do
-    GenServer.start_link(__MODULE__, %{nodes: %{NodeName.short_name() => :self}, dice_rolls_by_type: %{}, dice_roll_winners_by_type: %{}}, name: __MODULE__)
+    GenServer.start_link(
+      __MODULE__,
+      %{
+        nodes: %{NodeName.short_name() => :self},
+        dice_rolls_by_type: %{},
+        dice_roll_winners_by_type: %{}
+        },
+      name: __MODULE__
+    )
   end
 
   @impl true
@@ -29,9 +37,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   def roll_dice(message_type) do
-    # This node gets a random nunber (as all others are getting at the same moment)
-    random_number = Enum.random(1..10_000_000)
-    broadcast({:roll_dice, Node.self(), {message_type, random_number}})
+    broadcast({:please_roll_dice, Node.self()})
   end
 
   def is_player_present?(player_name) do
@@ -57,6 +63,8 @@ defmodule ElixirClusterGame.ChannelManager do
 
   def broadcast(msg) do
     Phoenix.PubSub.broadcast(ElixirClusterGame.PubSub, @topic, msg)
+    # Also send this message to ourselves
+    # send(__MODULE__, msg)
   end
 
   defp shorten_node_name(full_node) do
@@ -119,7 +127,15 @@ defmodule ElixirClusterGame.ChannelManager do
     {:noreply, state}
   end
 
-  def handle_info({:roll_dice, from_node, roll}, state) do
+  def handle_info({:please_roll_dice, from_node}, state) do
+    # This node gets a random nunber (as all others are getting at the same moment)
+    random_number = Enum.random(1..10_000_000)
+    IO.inspect({random_number,node()}, label: "Rolling dice - ===============================> ")
+    broadcast({:rolled_dice, {from_node, random_number}})
+    {:noreply, state}
+  end
+
+  def handle_info({:rolled_dice, from_node, roll}, state) do
     roll_identifier = all_nodes_to_identifier(state)
     {state, did_record_a_new_roll} = record_roll(from_node, roll, roll_identifier, state)
 
