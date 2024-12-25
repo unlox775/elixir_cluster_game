@@ -36,8 +36,8 @@ defmodule ElixirClusterGame.ChannelManager do
     broadcast({:to_all, Node.self(), msg})
   end
 
-  def roll_dice(message_type) do
-    broadcast({:please_roll_dice, message_type} |> IO.inspect(label: "roll_dice"))
+  def roll_dice(message_type, roll_identifier) do
+    broadcast({:please_roll_dice, message_type, roll_identifier} |> IO.inspect(label: "roll_dice"))
   end
 
   def is_player_present?(player_name) do
@@ -109,7 +109,7 @@ defmodule ElixirClusterGame.ChannelManager do
     short = shorten_node_name(full_node_name)
 
     # Start an all-node roll_dice
-    roll_dice(:new_starting_player)
+    roll_dice(:new_starting_player, all_nodes_to_identifier(state))
 
     state = %{state | nodes: Map.put(state.nodes, short, full_node_name)}
     Logger.info("Node joined: #{full_node_name} as #{short}.  Cluster: #{inspect(Map.keys(state.nodes))}")
@@ -120,26 +120,25 @@ defmodule ElixirClusterGame.ChannelManager do
     short = shorten_node_name(full_node_name)
 
     # Start an all-node roll_dice
-    roll_dice(:new_starting_player)
+    roll_dice(:new_starting_player, all_nodes_to_identifier(state))
 
     state = %{state | nodes: Map.delete(state.nodes, short)}
     Logger.info("Node left: #{full_node_name} (short: #{short}).  Cluster: #{inspect(Map.keys(state.nodes))}")
     {:noreply, state}
   end
 
-  def handle_info({:please_roll_dice, roll_type}, state) do
+  def handle_info({:please_roll_dice, roll_type, roll_identifier}, state) do
     # This node gets a random nunber (as all others are getting at the same moment)
-    roll = {roll_type, Node.self(), Enum.random(1..10_000_000)}
+    roll = {roll_type, roll_identifier, Node.self(), Enum.random(1..10_000_000)}
     IO.inspect({roll, Node.self()}, label: "Rolling dice - ===============================> ")
     broadcast({:rolled_dice, roll} |> IO.inspect(label: "rolled_dice"))
     {:noreply, state}
   end
 
   def handle_info({:rolled_dice, roll}, state) do
-    roll_identifier = all_nodes_to_identifier(state)
-    {state, did_record_a_new_roll} = record_roll(roll |> IO.inspect(label: "roll pre record"), roll_identifier, state) |> IO.inspect(label: "after record_roll")
+    {state, did_record_a_new_roll} = record_roll(roll |> IO.inspect(label: "roll pre record"), state) |> IO.inspect(label: "after record_roll")
 
-    {:noreply, notify_winner_if_roll_complete(state, roll, roll_identifier, did_record_a_new_roll)}
+    {:noreply, notify_winner_if_roll_complete(state, roll, did_record_a_new_roll)}
   end
 
   def handle_info({:to_all, from_node, game_msg}, state) do
@@ -177,7 +176,7 @@ defmodule ElixirClusterGame.ChannelManager do
   # Handle unknown messages
   def handle_info(_, state), do: {:noreply, state}
 
-  def record_roll({type, from_node, random_number}, roll_identifier, state) do
+  def record_roll({type, roll_identifier, from_node, random_number}, state) do
     with map_by_identifier <- Map.get(state.dice_rolls_by_type, type, %{}),
          map_by_player <- Map.get(map_by_identifier, roll_identifier, %{}),
          {:already_rolled, false} <- {:already_rolled, Map.has_key?(map_by_player, from_node)} do
@@ -190,12 +189,11 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   def notify_winner_if_roll_complete(state, _, _, false), do: state
-  def notify_winner_if_roll_complete(state, {type, _, _}, roll_identifier, _) do
-    current_roll_identifier = all_nodes_to_identifier(state)
+  def notify_winner_if_roll_complete(state, {type, roll_identifier, _, _}, _) do
     rolls = map_size(state.dice_rolls_by_type[type][roll_identifier])
     winning_node = Map.to_list(state.dice_rolls_by_type[type][roll_identifier]) |> Enum.max_by(&elem(&1, 1)) |> elem(0)
     cond do
-      current_roll_identifier != roll_identifier -> state
+      roll_identifier != roll_identifier -> state
       rolls != map_size(state.nodes) -> state
       Map.get(state.dice_roll_winners_by_type, type, nil) == winning_node -> state
       true ->
