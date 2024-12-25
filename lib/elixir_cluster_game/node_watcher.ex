@@ -1,6 +1,8 @@
 defmodule ElixirClusterGame.NodeWatcher do
   use GenServer
 
+  alias ElixirClusterGame.ChannelManager
+
   @check_interval 500
 
   def start_link(_args) do
@@ -16,11 +18,13 @@ defmodule ElixirClusterGame.NodeWatcher do
     current_nodes = Node.list()
     Enum.each(current_nodes -- known_nodes, fn n ->
       IO.puts("[JOIN] Node joined: #{n}")
+      ChannelManager.broadcast({:nodeup, n})
       IO.puts("Current cluster: #{inspect(current_nodes)}")
     end)
 
     Enum.each(known_nodes -- current_nodes, fn n ->
       IO.puts("[LEAVE] Node left: #{n}")
+      ChannelManager.broadcast({:nodedown, n})
       IO.puts("Current cluster: #{inspect(current_nodes)}")
     end)
 

@@ -2,6 +2,7 @@ defmodule ElixirClusterGame.ChannelManager do
   use GenServer
   require Logger
 
+  alias ElixirClusterGame.NodeName
   alias Game.Handler, as: PlayersGameModule
   alias ElixirClusterGame.RoshamboLaser.Game, as: RoshamboGame
   alias ElixirClusterGame.RoshamboLaser.GameState, as: RoshamboState
@@ -9,7 +10,7 @@ defmodule ElixirClusterGame.ChannelManager do
   @topic "cluster:lobby"
 
   def start_link(_args) do
-    GenServer.start_link(__MODULE__, %{nodes: %{}, dice_rolls_by_type: %{}, dice_roll_winners_by_type: %{}}, name: __MODULE__)
+    GenServer.start_link(__MODULE__, %{nodes: %{NodeName.short_name() => :self}, dice_rolls_by_type: %{}, dice_roll_winners_by_type: %{}}, name: __MODULE__)
   end
 
   @impl true
@@ -54,7 +55,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
 
-  defp broadcast(msg) do
+  def broadcast(msg) do
     Phoenix.PubSub.broadcast(ElixirClusterGame.PubSub, @topic, msg)
   end
 
@@ -102,8 +103,9 @@ defmodule ElixirClusterGame.ChannelManager do
     # Start an all-node roll_dice
     roll_dice(:new_starting_player)
 
-    Logger.info("Node joined: #{full_node_name} as #{short}")
-    {:noreply, %{state | nodes: Map.put(state.nodes, short, full_node_name)}}
+    state = %{state | nodes: Map.put(state.nodes, short, full_node_name)} |> IO.inspect(label: "after nodeup")
+    Logger.info("Node joined: #{full_node_name} as #{short}.  Cluster: #{inspect(Map.keys(state.nodes))}")
+    {:noreply, state}
   end
 
   def handle_info({:nodedown, full_node_name}, state) do
@@ -112,12 +114,13 @@ defmodule ElixirClusterGame.ChannelManager do
     # Start an all-node roll_dice
     roll_dice(:new_starting_player)
 
-    Logger.info("Node left: #{full_node_name} (short: #{short})")
-    {:noreply, %{state | nodes: Map.delete(state.nodes, short)}}
+    state = %{state | nodes: Map.delete(state.nodes, short)}
+    Logger.info("Node left: #{full_node_name} (short: #{short}).  Cluster: #{inspect(Map.keys(state.nodes))}")
+    {:noreply, state}
   end
 
   def handle_info({:roll_dice, from_node, roll}, state) do
-    roll_identifier = all_nodes_to_identifier(state)
+    roll_identifier = all_nodes_to_identifier(state |> IO.inspect(label: "state-pre"))
     {state, did_record_a_new_roll} = record_roll(from_node, roll, roll_identifier, state)
 
     {:noreply, notify_winner_if_roll_complete(state, roll, roll_identifier, did_record_a_new_roll)}
@@ -159,12 +162,12 @@ defmodule ElixirClusterGame.ChannelManager do
   def handle_info(_, state), do: {:noreply, state}
 
   def record_roll(from_node, {type, random_number}, roll_identifier, state) do
-    with by_type <- Map.get(state.dice_rolls_by_type, type, %{}),
-         by_identifier <- Map.get(by_type, roll_identifier, %{}),
-         {:already_rolled, false} <- {:already_rolled, Map.has_key?(by_identifier, from_node)} do
-      by_identifier = Map.put(by_identifier, roll_identifier, random_number)
-      by_type = Map.put(by_type, type, by_identifier)
-      {%{state | dice_rolls_by_type: Map.put(state.dice_rolls_by_type, type, by_type)}, true}
+    with map_by_identifier <- Map.get(state.dice_rolls_by_type, type, %{}),
+         map_by_player <- Map.get(map_by_identifier, roll_identifier, %{}),
+         {:already_rolled, false} <- {:already_rolled, Map.has_key?(map_by_player, from_node)} do
+      map_by_player = Map.put(map_by_player, from_node, random_number)
+      map_by_identifier = Map.put(map_by_player, roll_identifier, map_by_player)
+      {%{state | dice_rolls_by_type: Map.put(state.dice_rolls_by_type, type, map_by_identifier)}, true}
     else
       _ -> {state, false}
     end
@@ -183,7 +186,6 @@ defmodule ElixirClusterGame.ChannelManager do
         winning_roll(type, winning_node)
         %{state | dice_roll_winners_by_type: Map.put(state.dice_roll_winners_by_type, type, winning_node)}
     end
-    {:noreply, state}
   end
 
   def winning_roll(:new_starting_player, winning_node) do
@@ -195,6 +197,6 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   defp all_nodes_to_identifier(state) do
-    [Map.keys(state.nodes)|> Enum.sort()] |> Enum.join("_")
+    Map.keys(state.nodes)|> Enum.sort() |> Enum.join("_")
   end
 end
