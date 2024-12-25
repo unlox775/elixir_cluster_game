@@ -103,7 +103,7 @@ defmodule ElixirClusterGame.ChannelManager do
     # Start an all-node roll_dice
     roll_dice(:new_starting_player)
 
-    state = %{state | nodes: Map.put(state.nodes, short, full_node_name)} |> IO.inspect(label: "after nodeup")
+    state = %{state | nodes: Map.put(state.nodes, short, full_node_name)}
     Logger.info("Node joined: #{full_node_name} as #{short}.  Cluster: #{inspect(Map.keys(state.nodes))}")
     {:noreply, state}
   end
@@ -120,7 +120,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   def handle_info({:roll_dice, from_node, roll}, state) do
-    roll_identifier = all_nodes_to_identifier(state |> IO.inspect(label: "state-pre"))
+    roll_identifier = all_nodes_to_identifier(state)
     {state, did_record_a_new_roll} = record_roll(from_node, roll, roll_identifier, state)
 
     {:noreply, notify_winner_if_roll_complete(state, roll, roll_identifier, did_record_a_new_roll)}
@@ -177,7 +177,7 @@ defmodule ElixirClusterGame.ChannelManager do
   def notify_winner_if_roll_complete(state, {type, _}, roll_identifier, _) do
     current_roll_identifier = all_nodes_to_identifier(state)
     rolls = map_size(state.dice_rolls_by_type[type][roll_identifier])
-    winning_node = Map.to_list(state.dice_rolls_by_type[type][roll_identifier]) |> Enum.max_by(&elem(&1, 1))
+    winning_node = Map.to_list(state.dice_rolls_by_type[type][roll_identifier]) |> Enum.max_by(&elem(&1, 1)) |> elem(0)
     cond do
       current_roll_identifier != roll_identifier -> state
       rolls != map_size(state.nodes) -> state
@@ -189,6 +189,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   def winning_roll(:new_starting_player, winning_node) do
+    Logger.info("New starting player: #{winning_node}")
     RoshamboState.set_starting_player(winning_node)
   end
 
