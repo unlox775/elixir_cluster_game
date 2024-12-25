@@ -125,12 +125,15 @@ defmodule ElixirClusterGame.RoshamboLaser.Game do
           GameState.record_reply_and_beam_end(pending_message_id, their_move, current_player, :end)
 
       {:shoot, player_to_shoot, shooter_move} when is_atom(player_to_shoot) and shooter_move in [:rock, :paper, :scissors] ->
-        case ChannelManager.is_player_present?(player_to_shoot) do
-          true ->
-            GameState.record_new_shot(pending_message_id, current_player, shooter_move, player_to_shoot)
-          false ->
+        cond do
+          ! ChannelManager.is_player_present?(player_to_shoot) ->
             Logger.info("Player #{player_to_shoot} is not present\n\nwith args: #{inspect(handle_arg)}")
             GameState.record_reply_and_beam_end(pending_message_id, their_move, current_player, :missed)
+          player_to_shoot == current_player ->
+            Logger.info("You attempted to shoot yourself (#{player_to_shoot}), which is not allowed\n\nwith args: #{inspect(handle_arg)}")
+            GameState.record_reply_and_beam_end(pending_message_id, their_move, current_player, :missed)
+          true ->
+            GameState.record_new_shot(pending_message_id, current_player, shooter_move, player_to_shoot)
         end
 
       illegal_reply ->

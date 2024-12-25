@@ -19,8 +19,8 @@ defmodule ElixirClusterGame.RoshamboLaser.GameState do
     GenServer.cast(__MODULE__, {:record_reply_and_beam_end, from_message_id, pending_message_move, player_who_won, end_or_missed})
   def record_reply_and_new_won(from_message_id, move_to_record_at_message_id, winner, other_user, other_users_move), do:
     GenServer.cast(__MODULE__, {:record_reply_and_new_won, from_message_id, move_to_record_at_message_id, winner, other_user, other_users_move})
-  def record_reply_and_new_split(from_message_id, move_to_record_at_message_id, winners), do:
-    GenServer.cast(__MODULE__, {:record_reply_and_new_split, from_message_id, move_to_record_at_message_id, winners})
+  def record_reply_and_new_split(from_message_id, pending_message_move, winners), do:
+    GenServer.cast(__MODULE__, {:record_reply_and_new_split, from_message_id, pending_message_move, winners})
   def record_new_shot(from_message_id, shooter, shooter_move, target), do:
     GenServer.cast(__MODULE__, {:record_new_shot, from_message_id, shooter, shooter_move, target})
 
@@ -98,7 +98,7 @@ defmodule ElixirClusterGame.RoshamboLaser.GameState do
   end
 
   def handle_cast({:record_reply_and_new_split, _,_,_}, %{shot_in_progress: false} = state), do: {:noreply, state}
-  def handle_cast({:record_reply_and_new_split, pending_message_id, pending_message_move, {win_choice_one, win_choice_two}}, state) do
+  def handle_cast({:record_reply_and_new_split, pending_message_id, pending_message_move, [win_choice_one|[win_choice_two|_]]}, state) do
     shot_chain = generate_shot_chain(state.history, pending_message_id)
     {state, split_one} = new_split_history(win_choice_one, shot_chain, state)
     {state, split_two} = new_split_history(win_choice_two, shot_chain, state)
