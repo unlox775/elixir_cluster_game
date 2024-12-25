@@ -249,12 +249,11 @@ defmodule ElixirClusterGame.RoshamboLaser.Game do
   # Returns {player, number_of_shots} for the player with the least shots fired.
   # Tie-breaking is up to you. If multiple players have same min shots, returns one arbitrarily.
   defp player_with_least_shots(game_history) do
-    # Tally how many times each player did the shooting, then pick the min.
-    tally =
-      GameState.get_all_history_shots(game_history)
-      |> Enum.reduce(%{}, fn {shooter,_,_,_}, acc -> Map.update(acc, shooter, 1, &(&1 + 1)) end)
-      |> Map.to_list()
-    Enum.min_by(tally, &elem(&1, 1))
+    GameState.get_all_history_shots(game_history)
+    |> Enum.reduce(%{}, fn {shooter,_,_,_}, acc -> Map.update(acc, shooter, 1, &(&1 + 1)) end)
+    |> Map.to_list()
+    |> Enum.min_by(&elem(&1, 1))
+    |> elem(0)
   end
 
   # Helper to see if all beams ended.
