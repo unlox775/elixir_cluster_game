@@ -166,7 +166,7 @@ defmodule ElixirClusterGame.ChannelManager do
          map_by_player <- Map.get(map_by_identifier, roll_identifier, %{}),
          {:already_rolled, false} <- {:already_rolled, Map.has_key?(map_by_player, from_node)} do
       map_by_player = Map.put(map_by_player, from_node, random_number)
-      map_by_identifier = Map.put(map_by_player, roll_identifier, map_by_player)
+      map_by_identifier = Map.put(map_by_identifier, roll_identifier, map_by_player)
       {%{state | dice_rolls_by_type: Map.put(state.dice_rolls_by_type, type, map_by_identifier)}, true}
     else
       _ -> {state, false}
@@ -184,7 +184,7 @@ defmodule ElixirClusterGame.ChannelManager do
       Map.get(state.dice_roll_winners_by_type, type, nil) == winning_node -> state
       true ->
         winning_roll(type, winning_node)
-        %{state | dice_roll_winners_by_type: Map.put(state.dice_roll_winners_by_type, type, winning_node)}
+        %{state | dice_roll_winners_by_type: Map.put(state.dice_roll_winners_by_type, type, winning_node)}  |> IO.inspect(label: "new winner")
     end
   end
 
