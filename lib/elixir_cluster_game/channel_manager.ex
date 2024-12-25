@@ -37,7 +37,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   def roll_dice(message_type, roll_identifier) do
-    broadcast({:please_roll_dice, message_type, roll_identifier} |> IO.inspect(label: "roll_dice"))
+    broadcast({:please_roll_dice, message_type, roll_identifier})
   end
 
   def is_player_present?(player_name) do
@@ -136,7 +136,7 @@ defmodule ElixirClusterGame.ChannelManager do
   end
 
   def handle_info({:rolled_dice, roll}, state) do
-    {state, did_record_a_new_roll} = record_roll(roll |> IO.inspect(label: "roll pre record"), state) |> IO.inspect(label: "after record_roll")
+    {state, did_record_a_new_roll} = record_roll(roll |> IO.inspect(label: "roll pre record"), state)
 
     {:noreply, notify_winner_if_roll_complete(state, roll, did_record_a_new_roll)}
   end
@@ -198,7 +198,7 @@ defmodule ElixirClusterGame.ChannelManager do
       Map.get(state.dice_roll_winners_by_type, type, nil) == winning_node -> state
       true ->
         winning_roll(type, winning_node)
-        %{state | dice_roll_winners_by_type: Map.put(state.dice_roll_winners_by_type, type, winning_node)}  |> IO.inspect(label: "new winner")
+        %{state | dice_roll_winners_by_type: Map.put(state.dice_roll_winners_by_type, type, winning_node)}
     end
   end
 
