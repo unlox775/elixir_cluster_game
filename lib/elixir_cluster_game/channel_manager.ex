@@ -130,12 +130,12 @@ defmodule ElixirClusterGame.ChannelManager do
   def handle_info({:please_roll_dice, roll_type, roll_identifier}, state) do
     # This node gets a random nunber (as all others are getting at the same moment)
     roll = {roll_type, roll_identifier, Node.self(), Enum.random(1..10_000_000)}
-    IO.inspect({roll, Node.self()}, label: "Rolling dice - ===============================> ")
     broadcast({:rolled_dice, roll})
     {:noreply, state}
   end
 
   def handle_info({:rolled_dice, roll}, state) do
+    IO.inspect(roll, label: "Rolled dice - ===============================> ")
     {state, did_record_a_new_roll} = record_roll(roll, state)
 
     {:noreply, notify_winner_if_roll_complete(state, roll, did_record_a_new_roll)}
